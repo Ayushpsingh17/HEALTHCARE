@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breast Cancer Diagnosis Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F7F8;
+    --surface:#FFFFFF;
+    --ink:#12232E;
+    --ink-soft:#5B6B74;
+    --primary:#1B4B5A;
+    --primary-dark:#123640;
+    --primary-soft:#E4EDEF;
+    --line:#DDE4E6;
+    --risk-low:#2E7D46;      --risk-low-bg:#E7F3EA;
+    --risk-moderate:#B9791E; --risk-moderate-bg:#FBF0DE;
+    --risk-high:#B23A2E;     --risk-high-bg:#FBEAE8;
+    --focus:#3E7C8C;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+  }
+  a{color:inherit;}
+  :focus-visible{outline:2px solid var(--focus); outline-offset:2px;}
+
+  .app-header{
+    background:var(--primary);
+    color:#fff;
+    padding:28px 32px;
+  }
+  .app-header .inner{
+    max-width:1080px;
+    margin:0 auto;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .app-header h1{
+    font-family:'Newsreader',serif;
+    font-weight:600;
+    font-size:28px;
+    margin:0 0 4px 0;
+    letter-spacing:0.2px;
+  }
+  .app-header p{
+    margin:0;
+    color:#CFE0E4;
+    font-size:14.5px;
+  }
+  .model-badge{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;
+    background:rgba(255,255,255,0.12);
+    border:1px solid rgba(255,255,255,0.25);
+    padding:7px 12px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+
+  .shell{max-width:1080px; margin:0 auto; padding:28px 32px 64px;}
+
+  .tabs{
+    display:flex;
+    gap:4px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+  }
+  .tab-btn{
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    background:none;
+    border:none;
+    padding:12px 6px;
+    margin-right:22px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+    transform:translateY(1px);
+  }
+  .tab-btn.active{
+    color:var(--primary);
+    border-bottom:2px solid var(--primary);
+  }
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .disclaimer-banner{
+    background:var(--primary-soft);
+    border:1px solid #C7DBDF;
+    border-radius:var(--radius);
+    padding:12px 16px;
+    font-size:13.5px;
+    color:var(--primary-dark);
+    margin-bottom:24px;
+  }
+  .disclaimer-banner strong{font-weight:600;}
+
+  .toolbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .toolbar label{font-size:13.5px; color:var(--ink-soft); font-weight:500;}
+  select, button{
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+  }
+  select{
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+  }
+  .btn{
+    padding:9px 16px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+    cursor:pointer;
+    font-weight:600;
+  }
+  .btn:hover{background:#F0F3F4;}
+  .btn-primary{
+    background:var(--primary);
+    color:#fff;
+    border:1px solid var(--primary);
+    padding:12px 22px;
+    font-size:15px;
+  }
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-primary:disabled{opacity:0.6; cursor:not-allowed;}
+
+  .measure-card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px 24px;
+    margin-bottom:24px;
+  }
+  .measure-card h2{
+    font-family:'Newsreader',serif;
+    font-size:19px;
+    font-weight:600;
+    margin:0 0 4px 0;
+  }
+  .measure-card .sub{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 18px 0;
+  }
+  .grid-head, .measure-row{
+    display:grid;
+    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    gap:14px;
+    align-items:center;
+  }
+  .grid-head{
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    padding:0 0 8px 0;
+    border-bottom:1px solid var(--line);
+    margin-bottom:6px;
+  }
+  .measure-row{padding:7px 0;}
+  .measure-row .name{font-size:14px; font-weight:500;}
+  .measure-row input{
+    width:100%;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13.5px;
+    padding:7px 9px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:#FBFCFC;
+    color:var(--ink);
+  }
+  .measure-row input:focus{background:#fff;}
+
+  .run-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-top:22px;
+  }
+  .run-hint{font-size:13px; color:var(--ink-soft);}
+
+  /* Results panel */
+  .result-panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:26px 28px;
+    margin-top:8px;
+  }
+  .result-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap:16px;
+    margin-bottom:18px;
+  }
+  .result-diagnosis{
+    font-family:'Newsreader',serif;
+    font-size:26px;
+    font-weight:600;
+    text-transform:capitalize;
+  }
+  .result-diagnosis .label{
+    display:block;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .risk-badge{
+    font-size:13px;
+    font-weight:700;
+    padding:7px 14px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .risk-badge.low{background:var(--risk-low-bg); color:var(--risk-low);}
+  .risk-badge.moderate{background:var(--risk-moderate-bg); color:var(--risk-moderate);}
+  .risk-badge.high{background:var(--risk-high-bg); color:var(--risk-high);}
+
+  .gauge-label-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .gauge-track{
+    position:relative;
+    height:14px;
+    border-radius:999px;
+    background:linear-gradient(to right, var(--risk-low) 0%, var(--risk-moderate) 50%, var(--risk-high) 100%);
+    opacity:0.85;
+    margin-bottom:8px;
+  }
+  .gauge-marker{
+    position:absolute;
+    top:-5px;
+    width:4px;
+    height:24px;
+    background:var(--ink);
+    border-radius:2px;
+    transform:translateX(-2px);
+  }
+  .gauge-caption{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .result-metrics{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:16px;
+    margin-top:20px;
+  }
+  .metric-box{
+    background:#FBFCFC;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:12px 14px;
+  }
+  .metric-box .k{font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em;}
+  .metric-box .v{font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; margin-top:3px;}
+
+  .result-disclaimer{
+    margin-top:20px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+
+  .empty-state{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+  .error-state{
+    background:var(--risk-high-bg);
+    color:var(--risk-high);
+    border:1px solid #F1CFC9;
+    border-radius:var(--radius);
+    padding:16px 18px;
+    font-size:13.5px;
+  }
+
+  /* Model performance tab */
+  .perf-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    margin-bottom:24px;
+  }
+  @media (max-width:760px){ .perf-grid{grid-template-columns:1fr;} }
+  .metric-table{width:100%; border-collapse:collapse; font-size:14px;}
+  .metric-table th, .metric-table td{
+    text-align:left;
+    padding:9px 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .metric-table th{
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .metric-table td.num{font-family:'IBM Plex Mono',monospace;}
+  .fig-card img{width:100%; height:auto; border-radius:8px; border:1px solid var(--line);}
+  .fig-caption{font-size:12.5px; color:var(--ink-soft); margin-top:8px;}
+
+  footer{
+    max-width:1080px;
+    margin:0 auto;
+    padding:0 32px 40px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+
+  @media (max-width:640px){
+    .grid-head, .measure-row{grid-template-columns:1.3fr 1fr 1fr 1fr; gap:8px;}
+    .app-header, .shell{padding-left:18px; padding-right:18px;}
+    .result-metrics{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="inner">
+    <div>
+      <h1>Breast Cancer Diagnosis Support</h1>
+      <p>Decision support from digitized FNA cell-nuclei measurements</p>
+    </div>
+    <div class="model-badge" id="modelBadge">Logistic Regression · ROC-AUC 0.995</div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <div class="disclaimer-banner">
+    <strong>Clinical decision-support tool.</strong> Predictions are generated by a statistical model trained on the Wisconsin Diagnostic Breast Cancer dataset. This tool does not diagnose disease and must not replace evaluation by a qualified pathologist or clinician.
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="assess">Assessment</button>
+    <button class="tab-btn" data-tab="perf">Model Performance</button>
+  </div>
+
+  <!-- ASSESSMENT TAB -->
+  <section class="tab-panel active" id="tab-assess">
+
+    <div class="measure-card">
+      <h2>Cell Nuclei Measurements</h2>
+      <p class="sub">Enter values from the FNA image analysis, or load a reference sample to see how the model responds.</p>
+
+      <div class="toolbar">
+        <label for="sampleSelect">Load sample:</label>
+        <select id="sampleSelect">
+          <option value="">— none —</option>
+          <option value="benign">Reference sample A (benign-like)</option>
+          <option value="malignant">Reference sample B (malignant-like)</option>
+        </select>
+        <button class="btn" id="clearBtn" type="button">Clear all</button>
+      </div>
+
+      <div class="grid-head">
+        <span>Measurement</span><span>Mean</span><span>Std. Error</span><span>Worst</span>
+      </div>
+      <div id="measureRows"></div>
+
+      <div class="run-row">
+        <button class="btn-primary" id="runBtn" type="button">Run Assessment</button>
+        <span class="run-hint" id="runHint">All 30 fields are required.</span>
+      </div>
+    </div>
+
+    <div id="resultArea">
+      <div class="result-panel">
+        <div class="empty-state">Results will appear here after you run an assessment.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODEL PERFORMANCE TAB -->
+  <section class="tab-panel" id="tab-perf">
+    <div class="measure-card">
+      <h2>Held-Out Test Set Performance</h2>
+      <p class="sub">114 samples (20% of the dataset), never seen during training or model selection.</p>
+      <table class="metric-table">
+        <thead><tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Accuracy</td><td class="num">98.25%</td><td>Recall (benign)</td><td class="num">98.61%</td></tr>
+          <tr><td>Precision</td><td class="num">98.61%</td><td>Recall (malignant)</td><td class="num">97.62%</td></tr>
+          <tr><td>F1 Score</td><td class="num">0.986</td><td>5-fold CV ROC-AUC</td><td class="num">0.9957 ± 0.0048</td></tr>
+          <tr><td>ROC-AUC</td><td class="num">0.9954</td><td>Train / test split</td><td class="num">455 / 114</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="perf-grid">
+      <div class="measure-card fig-card">
+        <h2 style="font-size:16px;">Model Comparison</h2>
+        <img src="../model/figures/model_comparison.png" alt="Bar chart comparing ROC-AUC across five candidate models">
+        <p class="fig-caption">Five model families were trained and compared on identical splits; Logistic Regression and SVM were statistically tied for best ROC-AUC, with Logistic Regression chosen for its interpretability and near-instant inference time.</p>
+      </div>
+      <div class="measure-card fig-card">
+        <h2 style="font-size:16px;">ROC Curve</h2>
+        <img src="../model/figures/roc_curve.png" alt="ROC curve for the selected model">
+        <p class="fig-caption">Area under the curve of 0.995 indicates strong separation between malignant and benign classes across all decision thresholds.</p>
+      </div>
+      <div class="measure-card fig-card">
+        <h2 style="font-size:16px;">Confusion Matrix</h2>
+        <img src="../model/figures/confusion_matrix.png" alt="Confusion matrix for the selected model on the test set">
+        <p class="fig-caption">2 malignant cases were misclassified as benign out of 42 (recall 97.6%); 1 benign case was misclassified as malignant out of 72.</p>
+      </div>
+      <div class="measure-card fig-card">
+        <h2 style="font-size:16px;">Feature Influence</h2>
+        <img src="../model/figures/feature_importance.png" alt="Top 10 standardized logistic regression coefficients">
+        <p class="fig-caption">Worst-case texture, radius error, and worst concave points carry the strongest weight toward a malignant prediction.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  Dataset: Wisconsin Diagnostic Breast Cancer (UCI ML Repository), accessed via scikit-learn. Built for academic purposes as part of a Major Project submission.
+</footer>
+
+<script>
+const API_BASE = "http://localhost:8000";
+
+const MEASURES = [
+  ["radius", "Radius"], ["texture", "Texture"], ["perimeter", "Perimeter"], ["area", "Area"],
+  ["smoothness", "Smoothness"], ["compactness", "Compactness"], ["concavity", "Concavity"],
+  ["concave_points", "Concave Points"], ["symmetry", "Symmetry"], ["fractal_dimension", "Fractal Dimension"]
+];
+
+const SAMPLES = {
+  benign: {
+    mean_radius: 12.3, mean_texture: 15.2, mean_perimeter: 78.5, mean_area: 464.1,
+    mean_smoothness: 0.089, mean_compactness: 0.078, mean_concavity: 0.041,
+    mean_concave_points: 0.026, mean_symmetry: 0.171, mean_fractal_dimension: 0.059,
+    radius_error: 0.28, texture_error: 0.95, perimeter_error: 1.98, area_error: 21.3,
+    smoothness_error: 0.006, compactness_error: 0.018, concavity_error: 0.021,
+    concave_points_error: 0.009, symmetry_error: 0.017, fractal_dimension_error: 0.0028,
+    worst_radius: 13.5, worst_texture: 19.8, worst_perimeter: 87.2, worst_area: 561.3,
+    worst_smoothness: 0.121, worst_compactness: 0.152, worst_concavity: 0.113,
+    worst_concave_points: 0.061, worst_symmetry: 0.251, worst_fractal_dimension: 0.0742
+  },
+  malignant: {
+    mean_radius: 20.6, mean_texture: 29.3, mean_perimeter: 140.1, mean_area: 1265.0,
+    mean_smoothness: 0.118, mean_compactness: 0.278, mean_concavity: 0.317,
+    mean_concave_points: 0.162, mean_symmetry: 0.222, mean_fractal_dimension: 0.072,
+    radius_error: 1.05, texture_error: 1.34, perimeter_error: 7.5, area_error: 150.0,
+    smoothness_error: 0.008, compactness_error: 0.055, concavity_error: 0.06,
+    concave_points_error: 0.021, symmetry_error: 0.023, fractal_dimension_error: 0.006,
+    worst_radius: 25.7, worst_texture: 39.4, worst_perimeter: 184.6, worst_area: 1985.0,
+    worst_smoothness: 0.16, worst_compactness: 0.665, worst_concavity: 0.712,
+    worst_concave_points: 0.265, worst_symmetry: 0.46, worst_fractal_dimension: 0.119
+  }
+};
+
+// Build the 10x3 measurement grid
+const rowsContainer = document.getElementById("measureRows");
+MEASURES.forEach(([key, label]) => {
+  const row = document.createElement("div");
+  row.className = "measure-row";
+  row.innerHTML = `
+    <span class="name">${label}</span>
+    <input type="number" step="any" id="mean_${key}" placeholder="mean">
+    <input type="number" step="any" id="${key}_error" placeholder="s.e.">
+    <input type="number" step="any" id="worst_${key}" placeholder="worst">
+  `;
+  rowsContainer.appendChild(row);
+});
+
+// Tabs
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+// Sample loader
+document.getElementById("sampleSelect").addEventListener("change", (e) => {
+  const key = e.target.value;
+  if (!key) return;
+  const sample = SAMPLES[key];
+  Object.entries(sample).forEach(([field, value]) => {
+    const el = document.getElementById(field);
+    if (el) el.value = value;
+  });
+});
+
+document.getElementById("clearBtn").addEventListener("click", () => {
+  document.querySelectorAll("#measureRows input").forEach(i => i.value = "");
+  document.getElementById("sampleSelect").value = "";
+  document.getElementById("resultArea").innerHTML = `
+    <div class="result-panel"><div class="empty-state">Results will appear here after you run an assessment.</div></div>`;
+});
+
+function collectPayload() {
+  const payload = {};
+  let complete = true;
+  MEASURES.forEach(([key]) => {
+    ["mean_" + key, key + "_error", "worst_" + key].forEach(field => {
+      const el = document.getElementById(field);
+      const val = parseFloat(el.value);
+      if (isNaN(val)) complete = false;
+      payload[field] = val;
+    });
+  });
+  return complete ? payload : null;
+}
+
+function riskClass(level) {
+  return level === "Low" ? "low" : level === "Moderate" ? "moderate" : "high";
+}
+
+document.getElementById("runBtn").addEventListener("click", async () => {
+  const payload = collectPayload();
+  const resultArea = document.getElementById("resultArea");
+  const runBtn = document.getElementById("runBtn");
+
+  if (!payload) {
+    resultArea.innerHTML = `<div class="result-panel"><div class="error-state">All 30 fields must be filled in with numeric values before running an assessment. Try "Load sample" above for a working example.</div></div>`;
+    return;
+  }
+
+  runBtn.disabled = true;
+  runBtn.textContent = "Running…";
+
+  try {
+    const res = await fetch(`${API_BASE}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => null);
+      throw new Error(errBody?.detail ? JSON.stringify(errBody.detail) : `API returned status ${res.status}`);
+    }
+
+    const data = await res.json();
+    const rc = riskClass(data.risk_level);
+    const markerPos = Math.max(2, Math.min(98, data.malignant_probability * 100));
+
+    resultArea.innerHTML = `
+      <div class="result-panel">
+        <div class="result-top">
+          <div class="result-diagnosis">
+            <span class="label">Predicted diagnosis</span>
+            ${data.diagnosis}
+          </div>
+          <span class="risk-badge ${rc}">${data.risk_level} risk</span>
+        </div>
+
+        <div class="gauge-label-row">
+          <span>Benign</span><span>Malignant</span>
+        </div>
+        <div class="gauge-track">
+          <div class="gauge-marker" style="left:${markerPos}%;"></div>
+        </div>
+        <p class="gauge-caption">Malignant probability: ${(data.malignant_probability*100).toFixed(2)}% · Benign probability: ${(data.benign_probability*100).toFixed(2)}%</p>
+
+        <div class="result-metrics">
+          <div class="metric-box"><div class="k">Confidence</div><div class="v">${(data.confidence*100).toFixed(2)}%</div></div>
+          <div class="metric-box"><div class="k">Malignant Prob.</div><div class="v">${(data.malignant_probability*100).toFixed(2)}%</div></div>
+          <div class="metric-box"><div class="k">Benign Prob.</div><div class="v">${(data.benign_probability*100).toFixed(2)}%</div></div>
+        </div>
+
+        <p class="result-disclaimer">${data.disclaimer}</p>
+      </div>
+    `;
+  } catch (err) {
+    resultArea.innerHTML = `
+      <div class="result-panel">
+        <div class="error-state">
+          Could not reach the prediction API at <code>${API_BASE}</code>.<br>
+          Make sure the backend server is running: <code>uvicorn main:app --reload --port 8000</code> from the <code>backend/</code> folder.<br>
+          Details: ${err.message}
+        </div>
+      </div>`;
+  } finally {
+    runBtn.disabled = false;
+    runBtn.textContent = "Run Assessment";
+  }
+});
+</script>
+
+</body>
+</html>

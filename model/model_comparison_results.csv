@@ -1,0 +1,6 @@
+model,accuracy,precision,recall,f1_score,roc_auc,cv_roc_auc_mean,cv_roc_auc_std,train_time_sec
+Logistic Regression,0.9825,0.9861,0.9861,0.9861,0.9954,0.9957,0.0048,0.0108
+SVM (RBF Kernel),0.9825,0.9861,0.9861,0.9861,0.995,0.9957,0.0048,0.0187
+Random Forest,0.9474,0.9583,0.9583,0.9583,0.9937,0.9904,0.0072,0.6498
+MLP (Neural Network),0.9561,0.9855,0.9444,0.9645,0.9921,0.9956,0.0055,0.5129
+Gradient Boosting,0.9561,0.9467,0.9861,0.966,0.9907,0.9918,0.0053,0.4064
